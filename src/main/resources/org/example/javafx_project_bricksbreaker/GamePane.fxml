@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.Cursor?>
+<?import javafx.scene.effect.Bloom?>
+<?import javafx.scene.image.Image?>
+<?import javafx.scene.image.ImageView?>
+<?import javafx.scene.layout.AnchorPane?>
+
+
+<AnchorPane fx:id="root" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="800.0" prefWidth="700.0" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1" fx:controller="org.example.javafx_project_bricksbreaker.GamePaneController">
+   <children>
+      <ImageView fitHeight="800.0" fitWidth="700.0" pickOnBounds="true">
+         <image>
+            <Image url="@photos/phoui.jpg" />
+         </image>
+         <cursor>
+            <Cursor fx:constant="WAIT" />
+         </cursor>
+         <effect>
+            <Bloom threshold="0.24" />
+         </effect>
+      </ImageView>
+   </children>
+</AnchorPane>
