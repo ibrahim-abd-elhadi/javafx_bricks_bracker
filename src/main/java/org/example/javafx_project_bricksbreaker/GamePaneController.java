@@ -1,9 +1,12 @@
 package org.example.javafx_project_bricksbreaker;
-
+/////////////////////////////////////////////////////////////  the once
 import javafx.animation.AnimationTimer;
+import javafx.beans.value.ChangeListener;
+import javafx.beans.value.ObservableValue;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.Node;
+import javafx.scene.control.Slider;
 import javafx.scene.layout.AnchorPane;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Circle;
@@ -13,6 +16,7 @@ import javafx.scene.text.FontWeight;
 import javafx.scene.text.Text;
 
 import java.net.URL;
+import java.util.ArrayList;
 import java.util.ResourceBundle;
 
 public class GamePaneController implements Initializable {
@@ -23,37 +27,45 @@ public class GamePaneController implements Initializable {
 
     @FXML
     private AnchorPane root;
+    @FXML
+    private Slider sliderangel;
+
 
     private Circle ball;
+    private int slidersetangel;
     private double ballRadius = 10;
     private double ballSpeedX = 3;
     private double ballSpeedY = 3;
     private Rectangle[] bricks;
     private int[] brickHealth;
-    private int maxHealth = 1; // Maximum health of a brick
+    private int ballsFallen = 0;
+    private ArrayList<Circle> balls = new ArrayList<>();
+    private int maxHealth = 30; // Maximum health of a brick
     private int numBricks = 88; // Total number of bricks
     private int cannonX = 350; // X position of the cannon
     private int cannonY = 720; // Y position of the cannon
     private Rectangle cannon; // Cannon shape
-    private int numBallsToLaunch = 60; // Number of balls to launch
+    private int numBallsToLaunch = 40; // Number of balls to launch
     private int ballsLaunched = 0; // Counter for launched balls
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
         initializeBrickHealth(); // Initialize brick health array
-        createBall();
         createBricks();
         createCannon();
-        // Launch balls from the cannon
-        launchBalls();
-        // Animation timer for ball movement
+        sliderangel.valueProperty().addListener(new ChangeListener<Number>() {
+            @Override
+            public void changed(ObservableValue<? extends Number> observableValue, Number number, Number t1) {
+                slidersetangel=(int)sliderangel.getValue();
+            }
+        });
+        launchBalls(slidersetangel); // Launch multiple balls from the cannon
 
         // Animation timer for ball movement and collision detection
         AnimationTimer timer = new AnimationTimer() {
             @Override
             public void handle(long now) {
-                moveBall();
-                checkBallCollision();
+                updateBalls(); // Update the position and check collision for each ball
             }
         };
         timer.start();
@@ -76,15 +88,55 @@ public class GamePaneController implements Initializable {
         ball.setCenterY(ball.getCenterY() + ballSpeedY);
     }
 
-    private void checkBallCollision() {
-        if (ball.getCenterX() <= 0 || ball.getCenterX() >= root.getWidth()) {
-            ballSpeedX *= -1;
+
+    private void updateBalls() {
+        ArrayList<Circle> ballsToRemove = new ArrayList<>();
+        // Count the number of balls that have hit the bottom
+
+        for (Circle ball : balls) {
+            double[] velocity = (double[]) ball.getUserData();
+            double vx = velocity[0];
+            double vy = velocity[1];
+
+            // Update the position of the ball
+            ball.setCenterX(ball.getCenterX() + vx);
+            ball.setCenterY(ball.getCenterY() + vy);
+
+            // Check for horizontal boundary collisions and reverse direction
+            if (ball.getCenterX() <= ballRadius || ball.getCenterX() >= root.getWidth() - ballRadius) {
+                velocity[0] *= -1;
+            }
+
+            // Check for vertical boundary collisions and reverse direction
+            if (ball.getCenterY() <= ballRadius) {
+                velocity[1] *= -1;
+            }
+
+            // Check if the ball hits the bottom of the screen
+            if (ball.getCenterY() >= root.getHeight() - ballRadius) {
+                ballsToRemove.add(ball); // Schedule the ball for removal
+                ballsFallen++;  // Increment the count of fallen balls
+            }
+            if (ballsFallen ==numBallsToLaunch) {
+                repositionBricks();
+            }
+            // Update the velocity after handling collisions
+            ball.setUserData(velocity);
+
+            // Handle collisions with bricks
+            checkBrickCollision(ball, velocity);
+
         }
-        if (ball.getCenterY() <= 0 || ball.getCenterY() >= root.getHeight()) {
-            ballSpeedY *= -1;
-        }
-        checkBrickCollision();
+
+        // Remove balls that have hit the bottom
+        balls.removeAll(ballsToRemove);
+        root.getChildren().removeAll(ballsToRemove);
+
+        // If all balls have fallen, reposition the bricks
+
     }
+
+
 
 
     private void createBricks() {
@@ -161,42 +213,47 @@ public class GamePaneController implements Initializable {
         cannon.setFill(Color.GRAY);
         root.getChildren().add(cannon);
     }
-    private void launchBalls() {
-        // Launch balls one by one
+    private void launchBalls(int angel) {
         AnimationTimer timer = new AnimationTimer() {
+            private long lastUpdate = 0; // Track the time of the last ball launch
+            private final long interval = 50000000; // 1 second interval between launches
+            private final double fixedAngle = Math.toRadians(45); // Launch angle
+
             @Override
             public void handle(long now) {
-                if (ballsLaunched < numBallsToLaunch) {
-                    // Create a new ball and set its position to the cannon
+                if (ballsLaunched < numBallsToLaunch && (lastUpdate == 0 || now - lastUpdate >= interval)) {
+                    double speed = 10; // Set a constant speed for each ball
+                    double vx = Math.cos(fixedAngle) * speed;
+                    double vy = -Math.sin(fixedAngle) * speed;
+
                     Circle newBall = new Circle(cannonX, cannonY - ballRadius / 2, ballRadius, Color.LIGHTPINK);
+                    newBall.setUserData(new double[]{vx, vy});
                     root.getChildren().add(newBall);
-                    // Adjust speed and angle of the ball
-                    double angle = Math.random() * Math.PI / 4 - Math.PI / 8; // Random angle between -π/8 and π/8
-                    double speed = Math.random() * 5 + 5; // Random speed between 5 and 10
-                    double vx = Math.sin(angle) * speed;
-                    double vy = -Math.cos(angle) * speed;
-                    // Animate the ball's movement
-                    AnimationTimer ballTimer = new AnimationTimer() {
-                        @Override
-                        public void handle(long now) {
-                            newBall.setCenterX(newBall.getCenterX() + vx);
-                            newBall.setCenterY(newBall.getCenterY() + vy);
-                            if (newBall.getCenterY() <= 0) {
-                                // Remove the ball when it goes out of bounds
-                                root.getChildren().remove(newBall);
-                                this.stop();
-                            }
-                        }
-                    };
-                    ballTimer.start();
+                    balls.add(newBall);
+
                     ballsLaunched++;
-                } else {
-                    this.stop(); // Stop launching balls when the desired number is reached
+                    lastUpdate = now;
+                }
+
+                if (ballsLaunched >= numBallsToLaunch) {
+                    this.stop();
                 }
             }
         };
         timer.start();
     }
+
+    private void repositionBricks() {
+        int deltaY = 20;  // Amount to move bricks down
+        for (Rectangle brick : bricks) {
+            if (brick != null) {
+                brick.setY(brick.getY() + deltaY);
+            }
+        }
+    }
+
+
+
 
     private void updateHealthText(int index) {
         // Find the health text node associated with the given brick index
@@ -217,29 +274,38 @@ public class GamePaneController implements Initializable {
     }
 
 
-    private void checkBrickCollision() {
+    private void checkBrickCollision(Circle ball, double[] velocity) {
+        double vx = velocity[0];
+        double vy = velocity[1];
+
         for (int i = 0; i < numBricks; i++) {
             if (brickHealth[i] > 0 && bricks[i] != null && ball.getBoundsInParent().intersects(bricks[i].getBoundsInParent())) {
                 brickHealth[i]--;
                 if (brickHealth[i] == 0) {
-                    bricks[i].setVisible(false);
+                    bricks[i].setVisible(false);  // Hide the brick if its health is depleted
                 }
+
                 double ballCenterX = ball.getCenterX();
                 double ballCenterY = ball.getCenterY();
-
                 double brickTop = bricks[i].getY();
                 double brickBottom = brickTop + bricks[i].getHeight();
                 double brickLeft = bricks[i].getX();
                 double brickRight = brickLeft + bricks[i].getWidth();
 
+                // Check which side of the brick the ball has hit and reverse the appropriate velocity component
                 if (ballCenterX > brickLeft && ballCenterX < brickRight) {
-                    ballSpeedY *= -1;
-
-                } else if (ballCenterY > brickTop && ballCenterY < brickBottom) {
-                    ballSpeedX *= -1;
+                    vy *= -1; // Vertical bounce
+                } else {
+                    vx *= -1; // Horizontal bounce
                 }
+
+                // Update the velocity in the ball's user data
+                velocity[0] = vx;
+                velocity[1] = vy;
+                break; // Break the loop after handling collision to avoid multiple collision responses
             }
         }
     }
+
 
 }
