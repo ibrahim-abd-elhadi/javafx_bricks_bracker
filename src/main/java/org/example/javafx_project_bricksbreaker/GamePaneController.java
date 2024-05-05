@@ -1,5 +1,4 @@
 package org.example.javafx_project_bricksbreaker;
-/////////////////////////////////////////////////////////////  the once
 import javafx.animation.AnimationTimer;
 import javafx.application.Platform;
 import javafx.beans.value.ChangeListener;
@@ -19,31 +18,21 @@ import javafx.scene.shape.Rectangle;
 import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
 import javafx.scene.text.Text;
-
 import java.net.URL;
 import java.util.ArrayList;
-<<<<<<< HEAD
 import java.util.Objects;
 import java.util.Optional;
-=======
 import java.util.List;
->>>>>>> e60eada06f4f80aedb83ddf64cdea3608b6f1c08
 import java.util.ResourceBundle;
 
 public class GamePaneController implements Initializable {
-
-    @FXML
-    private Rectangle recme;
-
-
-
 
     @FXML
     private AnchorPane root;
     @FXML
     private Slider sliderangel;
 
-
+    private List<Text> healthTexts = new ArrayList<>();
     private Circle ball;
     private int slidersetangel;
 
@@ -52,7 +41,7 @@ public class GamePaneController implements Initializable {
     private double ballSpeedX = 3;
     private double ballSpeedY = 3;
     private Rectangle[] bricks;
-    private List<Text> healthTexts = new ArrayList<>();
+
     private int[] brickHealth;
     private int ballsFallen = 0;
     private ArrayList<Circle> balls = new ArrayList<>();
@@ -61,7 +50,7 @@ public class GamePaneController implements Initializable {
     private int cannonX = 350; // X position of the cannon
     private int cannonY = 720; // Y position of the cannon
     private Rectangle cannon; // Cannon shape
-    private int numBallsToLaunch = 72; // Number of balls to launch
+    private int numBallsToLaunch = 34; // Number of balls to launch
     private int ballsLaunched = 0; // Counter for launched balls
     private boolean gameStarted = false;
 
@@ -150,15 +139,6 @@ public class GamePaneController implements Initializable {
         }
     }
 
-    private void createBall() {
-        ball = new Circle(300, 400, ballRadius, Color.LIGHTPINK);
-        root.getChildren().add(ball);
-    }
-
-    private void moveBall() {
-        ball.setCenterX(ball.getCenterX() + ballSpeedX);
-        ball.setCenterY(ball.getCenterY() + ballSpeedY);
-    }
 
 
     private void updateBalls() {
@@ -237,25 +217,32 @@ public class GamePaneController implements Initializable {
                             brick.setFill(Color.ORANGE);
                             brick.setArcWidth(20); // Set the arc width
                             brick.setArcHeight(20); // Set the arc height
+                            brick.setStroke(Color.AZURE);
+                            brick.setStrokeWidth(3);
                             break;
                         case 1:
                             brick.setFill(Color.VIOLET);
                             brick.setArcWidth(20); // Set the arc width
                             brick.setArcHeight(20); // Set the arc height
+                            brick.setStroke(Color.AZURE);
+                            brick.setStrokeWidth(3);
                             break;
                         case 2:
                             brick.setFill(Color.RED);
                             brick.setArcWidth(20); // Set the arc width
                             brick.setArcHeight(20); // Set the arc height
+                            brick.setStroke(Color.AZURE);
+                            brick.setStrokeWidth(3);
                             break;
                         case 3:
                             brick.setFill(Color.BLUEVIOLET);
                             brick.setArcWidth(20); // Set the arc width
                             brick.setArcHeight(20);
+                            brick.setStroke(Color.AZURE);
+                            brick.setStrokeWidth(3);
                             break;
                     }
                     root.getChildren().add(brick);
-                    brick.setId(Integer.toString(index));
 
                     bricks[index] = brick;
 
@@ -264,7 +251,7 @@ public class GamePaneController implements Initializable {
                     healthText.setId(Integer.toString(index));
                     healthText.setFont(Font.font("Arial", FontWeight.BOLD, 14));
                     healthText.setFill(Color.WHITE);
-                    healthText.setX(x + brickSize / 2 - 5); // Center text horizontally
+                    healthText.setX(x + brickSize / 2 -7); // Center text horizontally
                     healthText.setY(y + brickSize / 2 + 5); // Center text vertically
                     root.getChildren().add(healthText); // Add text to AnchorPane
                     healthTexts.add(healthText);
@@ -282,6 +269,7 @@ public class GamePaneController implements Initializable {
                 "###  ## ###" +
                 "# ## #   ###" +
                 "##    #   #" + "##     ####";
+
         int index = row * 11 + col;
         return design.charAt(index) == '#';
     }
@@ -294,7 +282,7 @@ public class GamePaneController implements Initializable {
     private void launchBalls(double angel) {
         AnimationTimer timer = new AnimationTimer() {
             private long lastUpdate = 0; // Track the time of the last ball launch
-            private final long interval = 50000000; // 1 second interval between launches
+            private final long interval = 70000000; // 1 second interval between launches
             private final double fixedAngle = Math.toRadians(-angel+180); // Launch angle
 
             @Override
