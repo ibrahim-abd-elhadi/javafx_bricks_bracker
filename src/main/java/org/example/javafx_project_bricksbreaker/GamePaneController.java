@@ -22,8 +22,12 @@ import javafx.scene.text.Text;
 
 import java.net.URL;
 import java.util.ArrayList;
+<<<<<<< HEAD
 import java.util.Objects;
 import java.util.Optional;
+=======
+import java.util.List;
+>>>>>>> e60eada06f4f80aedb83ddf64cdea3608b6f1c08
 import java.util.ResourceBundle;
 
 public class GamePaneController implements Initializable {
@@ -48,6 +52,7 @@ public class GamePaneController implements Initializable {
     private double ballSpeedX = 3;
     private double ballSpeedY = 3;
     private Rectangle[] bricks;
+    private List<Text> healthTexts = new ArrayList<>();
     private int[] brickHealth;
     private int ballsFallen = 0;
     private ArrayList<Circle> balls = new ArrayList<>();
@@ -250,16 +255,19 @@ public class GamePaneController implements Initializable {
                             break;
                     }
                     root.getChildren().add(brick);
+                    brick.setId(Integer.toString(index));
 
                     bricks[index] = brick;
 
-                    /*// Create text node for displaying health
+                    // Create text node for displaying health
                     Text healthText = new Text(Integer.toString(brickHealth[index]));
+                    healthText.setId(Integer.toString(index));
                     healthText.setFont(Font.font("Arial", FontWeight.BOLD, 14));
                     healthText.setFill(Color.WHITE);
                     healthText.setX(x + brickSize / 2 - 5); // Center text horizontally
                     healthText.setY(y + brickSize / 2 + 5); // Center text vertically
-                    root.getChildren().add(healthText); // Add text to AnchorPane*/
+                    root.getChildren().add(healthText); // Add text to AnchorPane
+                    healthTexts.add(healthText);
                 }
             }
 
@@ -328,6 +336,9 @@ public class GamePaneController implements Initializable {
                 brick.setY(brick.getY() + deltaY);
             }
         }
+        for (Text text : healthTexts) {
+            text.setY(text.getY() + deltaY);
+        }
     }
 
 
@@ -336,13 +347,9 @@ public class GamePaneController implements Initializable {
     private void updateHealthText(int index) {
         // Find the health text node associated with the given brick index
         for (Node node : root.getChildren()) {
-            if (node instanceof Text) {
-                Text healthText = (Text) node;
-                if (root.getChildren().indexOf(healthText) % 2 != 0) { // Skip every other node (assume health texts are added after bricks)
-                    continue;
-                }
-                int brickIndex = root.getChildren().indexOf(healthText) / 2; // Calculate the brick index from the health text index
-                if (brickIndex == index) {
+            if (node instanceof Text healthText) {
+                if (Integer.parseInt(healthText.getId()) == index) {
+                    if (brickHealth[index] == 0) healthText.setVisible(false);
                     // Update the health text with the new health value
                     healthText.setText(Integer.toString(brickHealth[index]));
                     break; // Exit loop once the health text is found and updated
@@ -359,6 +366,7 @@ public class GamePaneController implements Initializable {
         for (int i = 0; i < numBricks; i++) {
             if (brickHealth[i] > 0 && bricks[i] != null && ball.getBoundsInParent().intersects(bricks[i].getBoundsInParent())) {
                 brickHealth[i]--;
+                updateHealthText(i);
                 if (brickHealth[i] == 0) {
                     bricks[i].setVisible(false);     // Hide the brick if its health is depleted
 
