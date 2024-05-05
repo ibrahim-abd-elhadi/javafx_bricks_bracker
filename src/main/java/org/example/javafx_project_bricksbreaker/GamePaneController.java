@@ -1,12 +1,17 @@
 package org.example.javafx_project_bricksbreaker;
 /////////////////////////////////////////////////////////////  the once
 import javafx.animation.AnimationTimer;
+import javafx.application.Platform;
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.Node;
+import javafx.scene.control.Alert;
+import javafx.scene.control.ButtonType;
 import javafx.scene.control.Slider;
+import javafx.scene.image.Image;
+import javafx.scene.image.ImageView;
 import javafx.scene.layout.AnchorPane;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Circle;
@@ -17,12 +22,16 @@ import javafx.scene.text.Text;
 
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.Objects;
+import java.util.Optional;
 import java.util.ResourceBundle;
 
 public class GamePaneController implements Initializable {
 
     @FXML
     private Rectangle recme;
+
+
 
 
     @FXML
@@ -33,6 +42,8 @@ public class GamePaneController implements Initializable {
 
     private Circle ball;
     private int slidersetangel;
+
+    private AnimationTimer gameTimer;
     private double ballRadius = 10;
     private double ballSpeedX = 3;
     private double ballSpeedY = 3;
@@ -45,31 +56,87 @@ public class GamePaneController implements Initializable {
     private int cannonX = 350; // X position of the cannon
     private int cannonY = 720; // Y position of the cannon
     private Rectangle cannon; // Cannon shape
-    private int numBallsToLaunch = 40; // Number of balls to launch
+    private int numBallsToLaunch = 72; // Number of balls to launch
     private int ballsLaunched = 0; // Counter for launched balls
+    private boolean gameStarted = false;
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
-        initializeBrickHealth(); // Initialize brick health array
+        initializeBrickHealth();
         createBricks();
         createCannon();
-        sliderangel.valueProperty().addListener(new ChangeListener<Number>() {
-            @Override
-            public void changed(ObservableValue<? extends Number> observableValue, Number number, Number t1) {
-                slidersetangel=(int)sliderangel.getValue();
-            }
-        });
-        launchBalls(slidersetangel); // Launch multiple balls from the cannon
 
-        // Animation timer for ball movement and collision detection
-        AnimationTimer timer = new AnimationTimer() {
+        gameTimer = new AnimationTimer() {
             @Override
             public void handle(long now) {
-                updateBalls(); // Update the position and check collision for each ball
+                updateBalls();
+                for (Rectangle brick : bricks) {
+                    if (brick != null && brick.getY() >= 591) {
+                        this.stop(); // Stop the game timer
+                        Platform.runLater(this::showEndGameDialog); // Show dialog on JavaFX Application Thread
+                        break;
+                    }
+                }
+                if (ballsFallen == numBallsToLaunch && gameStarted) {
+                    resetGame(); // Reset game to start new launch
+                }
             }
+
+            private void showEndGameDialog() {
+                Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
+                alert.setTitle("Game Over");
+                alert.setHeaderText("A brick has reached the critical position!");
+                alert.setContentText("Choose your option:");
+
+                ButtonType buttonTypeRetry = new ButtonType("Retry");
+                ButtonType buttonTypeExit = new ButtonType("Exit");
+                alert.getButtonTypes().setAll(buttonTypeRetry, buttonTypeExit);
+
+                Optional<ButtonType> result = alert.showAndWait();
+                if (result.isPresent()) {
+                    if (result.get() == buttonTypeRetry) {
+                        reset();  // Reset game state and start over
+                        gameTimer.start();  // Restart the game timer
+                    } else if (result.get() == buttonTypeExit) {
+                        System.exit(0);  // Exit the game
+                    }
+                } else {
+                    // Log when no selection is made and the dialog is closed
+                    System.out.println("No selection made, dialog closed.");
+                }
+            }
+
         };
-        timer.start();
+        gameTimer.start();
+
+        sliderangel.valueChangingProperty().addListener((obs, wasChanging, isNowChanging) -> {
+            if (wasChanging && !isNowChanging) {
+                launchBalls(sliderangel.getValue());
+                gameStarted = true;
+                sliderangel.setValue(90);
+            }
+        });
     }
+
+    private void reset() {
+        // Reset all game variables and states to their initial values
+        ballsFallen = 0;
+        balls.clear();
+        gameStarted = false;
+        // Reset any other variables and states as needed
+
+        // Delete all previous game bricks
+        root.getChildren().removeIf(node -> node instanceof Rectangle);
+
+        // Reset bricks and cannon positions
+        initializeBrickHealth();
+        createBricks();
+        createCannon();
+
+        // Start the game timer again
+        gameTimer.start();
+    }
+
 
     private void initializeBrickHealth() {
         brickHealth = new int[numBricks];
@@ -139,6 +206,7 @@ public class GamePaneController implements Initializable {
 
 
 
+
     private void createBricks() {
         int brickSize = 50; // Size of each brick (width and height)
         int spacing = 5; // Spacing between bricks
@@ -148,6 +216,7 @@ public class GamePaneController implements Initializable {
         int startY = 50; // Starting Y position
 
         bricks = new Rectangle[numBricks];
+
 
         for (int row = 0; row < numRows; row++) {
             for (int col = 0; col < numCols; col++) {
@@ -193,6 +262,7 @@ public class GamePaneController implements Initializable {
                     root.getChildren().add(healthText); // Add text to AnchorPane*/
                 }
             }
+
         }
     }
 
@@ -213,16 +283,16 @@ public class GamePaneController implements Initializable {
         cannon.setFill(Color.GRAY);
         root.getChildren().add(cannon);
     }
-    private void launchBalls(int angel) {
+    private void launchBalls(double angel) {
         AnimationTimer timer = new AnimationTimer() {
             private long lastUpdate = 0; // Track the time of the last ball launch
             private final long interval = 50000000; // 1 second interval between launches
-            private final double fixedAngle = Math.toRadians(45); // Launch angle
+            private final double fixedAngle = Math.toRadians(-angel+180); // Launch angle
 
             @Override
             public void handle(long now) {
                 if (ballsLaunched < numBallsToLaunch && (lastUpdate == 0 || now - lastUpdate >= interval)) {
-                    double speed = 10; // Set a constant speed for each ball
+                    double speed = 7.5; // Set a constant speed for each ball
                     double vx = Math.cos(fixedAngle) * speed;
                     double vy = -Math.sin(fixedAngle) * speed;
 
@@ -237,16 +307,24 @@ public class GamePaneController implements Initializable {
 
                 if (ballsLaunched >= numBallsToLaunch) {
                     this.stop();
+                    sliderangel.setValue(90);
                 }
             }
         };
         timer.start();
     }
+    private void resetGame() {
+        // Reset game state here
+        balls.clear();        // Clear all balls
+        ballsLaunched = 0;    // Reset the number of balls launched
+        ballsFallen = 0;      // Reset the number of balls fallen
+        gameStarted = false;  // Allow a new game to start
+    }
 
     private void repositionBricks() {
-        int deltaY = 20;  // Amount to move bricks down
+        int deltaY = 30;  // Amount to move bricks down
         for (Rectangle brick : bricks) {
-            if (brick != null) {
+            if (brick != null&& brick.isVisible()) {
                 brick.setY(brick.getY() + deltaY);
             }
         }
@@ -282,7 +360,8 @@ public class GamePaneController implements Initializable {
             if (brickHealth[i] > 0 && bricks[i] != null && ball.getBoundsInParent().intersects(bricks[i].getBoundsInParent())) {
                 brickHealth[i]--;
                 if (brickHealth[i] == 0) {
-                    bricks[i].setVisible(false);  // Hide the brick if its health is depleted
+                    bricks[i].setVisible(false);     // Hide the brick if its health is depleted
+
                 }
 
                 double ballCenterX = ball.getCenterX();

@@ -3,28 +3,26 @@
 <?import javafx.scene.Cursor?>
 <?import javafx.scene.control.Slider?>
 <?import javafx.scene.effect.Blend?>
-<?import javafx.scene.effect.Bloom?>
 <?import javafx.scene.image.Image?>
 <?import javafx.scene.image.ImageView?>
 <?import javafx.scene.layout.AnchorPane?>
+<?import javafx.scene.shape.Line?>
 
 <AnchorPane fx:id="root" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="800.0" prefWidth="700.0" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1" fx:controller="org.example.javafx_project_bricksbreaker.GamePaneController">
    <children>
       <ImageView fitHeight="800.0" fitWidth="700.0" pickOnBounds="true">
          <image>
-            <Image url="@photos/phoui.jpg" />
+            <Image url="@photos/kol.jpg" />
          </image>
          <cursor>
             <Cursor fx:constant="WAIT" />
          </cursor>
-         <effect>
-            <Bloom threshold="0.24" />
-         </effect>
       </ImageView>
-      <Slider fx:id="sliderangel" layoutX="269.0" layoutY="742.0" max="180.0" prefHeight="44.0" prefWidth="161.0" showTickLabels="true" showTickMarks="true" snapToTicks="true" value="90.0">
+      <Slider fx:id="sliderangel" layoutX="269.0" layoutY="742.0" max="160.0" min="20.0" prefHeight="44.0" prefWidth="161.0" showTickMarks="true" snapToTicks="true" value="90.0">
          <effect>
             <Blend />
          </effect>
       </Slider>
+      <Line endX="312.8333740234375" layoutX="-263.8333740234375" layoutY="637.0" startX="915.0" strokeLineCap="ROUND" strokeWidth="12.0" AnchorPane.leftAnchor="43.0" AnchorPane.rightAnchor="42.8333740234375" />
    </children>
 </AnchorPane>
