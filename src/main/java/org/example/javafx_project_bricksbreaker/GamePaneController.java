@@ -117,10 +117,11 @@ public class GamePaneController implements Initializable {
         ballsFallen = 0;
         balls.clear();
         gameStarted = false;
+        healthTexts.clear();
         // Reset any other variables and states as needed
-
         // Delete all previous game bricks
         root.getChildren().removeIf(node -> node instanceof Rectangle);
+        root.getChildren().removeIf(node -> node instanceof Text);
 
         // Reset bricks and cannon positions
         initializeBrickHealth();
