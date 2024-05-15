@@ -3,16 +3,19 @@
 <?import javafx.scene.Cursor?>
 <?import javafx.scene.control.Slider?>
 <?import javafx.scene.effect.Blend?>
+<?import javafx.scene.effect.Bloom?>
 <?import javafx.scene.image.Image?>
 <?import javafx.scene.image.ImageView?>
 <?import javafx.scene.layout.AnchorPane?>
 <?import javafx.scene.shape.Line?>
+<?import javafx.scene.text.Font?>
+<?import javafx.scene.text.Text?>
 
 <AnchorPane fx:id="root" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="800.0" prefWidth="700.0" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1" fx:controller="org.example.javafx_project_bricksbreaker.GamePaneController">
    <children>
       <ImageView fitHeight="800.0" fitWidth="700.0" pickOnBounds="true">
          <image>
-            <Image url="@photos/kol.jpg" />
+            <Image url="@photos/background.jpg" />
          </image>
          <cursor>
             <Cursor fx:constant="WAIT" />
@@ -23,6 +26,24 @@
             <Blend />
          </effect>
       </Slider>
-      <Line endX="312.8333740234375" layoutX="-263.8333740234375" layoutY="637.0" startX="915.0" strokeLineCap="ROUND" strokeWidth="12.0" AnchorPane.leftAnchor="43.0" AnchorPane.rightAnchor="42.8333740234375" />
+      <Line endX="312.8333740234375" layoutX="-263.8333740234375" layoutY="637.0" opacity="0.74" startX="915.0" strokeLineCap="ROUND" strokeWidth="12.0" AnchorPane.leftAnchor="43.0" AnchorPane.rightAnchor="42.8333740234375" />
+      <Text fx:id="scoreText" fill="WHITE" layoutX="21.0" layoutY="38.0" strokeType="OUTSIDE" strokeWidth="0.0" text="Score: 0" textAlignment="CENTER" wrappingWidth="285.25060272216797" AnchorPane.leftAnchor="21.0" AnchorPane.rightAnchor="393.74939727783203">
+         <font>
+            <Font size="22.0" />
+         </font>
+      </Text>
+      <Text fx:id="ballnum" fill="#faf9fb" layoutX="362.0" layoutY="734.0" strokeDashOffset="1.0" strokeLineCap="ROUND" strokeLineJoin="ROUND" strokeType="OUTSIDE" strokeWidth="0.0" text="Text">
+         <font>
+            <Font name="System Bold Italic" size="18.0" />
+         </font>
+      </Text>
+      <Text fx:id="bestScore" fill="#f2ff03" layoutX="365.0" layoutY="38.0" strokeType="OUTSIDE" strokeWidth="0.0" text="Best Score: 0" textAlignment="CENTER" wrappingWidth="320.5840835571289" AnchorPane.leftAnchor="365.0" AnchorPane.rightAnchor="14.415916442871094">
+         <font>
+            <Font name="System Bold Italic" size="22.0" />
+         </font>
+         <effect>
+            <Bloom threshold="0.91" />
+         </effect>
+      </Text>
    </children>
 </AnchorPane>

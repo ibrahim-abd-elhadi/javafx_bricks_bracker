@@ -5,6 +5,7 @@ import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
+import javafx.geometry.Point2D;
 import javafx.scene.Node;
 import javafx.scene.control.Alert;
 import javafx.scene.control.ButtonType;
@@ -14,16 +15,19 @@ import javafx.scene.image.ImageView;
 import javafx.scene.layout.AnchorPane;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Circle;
+import javafx.scene.shape.Line;
 import javafx.scene.shape.Rectangle;
 import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
 import javafx.scene.text.Text;
+import javafx.scene.transform.Rotate;
+
+import java.io.*;
 import java.net.URL;
-import java.util.ArrayList;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.List;
-import java.util.ResourceBundle;
+import java.util.*;
+import java.util.stream.Collectors;
+
+import static javafx.scene.paint.Color.*;
 
 public class GamePaneController implements Initializable {
 
@@ -31,15 +35,13 @@ public class GamePaneController implements Initializable {
     private AnchorPane root;
     @FXML
     private Slider sliderangel;
-
+    @FXML
+    private Text ballnum;
+    @FXML
+    private Text bestScore;
     private List<Text> healthTexts = new ArrayList<>();
-    private Circle ball;
-    private int slidersetangel;
-
     private AnimationTimer gameTimer;
-    private double ballRadius = 10;
-    private double ballSpeedX = 3;
-    private double ballSpeedY = 3;
+    private double ballRadius = 11.5;
     private Rectangle[] bricks;
 
     private int[] brickHealth;
@@ -50,30 +52,50 @@ public class GamePaneController implements Initializable {
     private int cannonX = 350; // X position of the cannon
     private int cannonY = 720; // Y position of the cannon
     private Rectangle cannon; // Cannon shape
-    private int numBallsToLaunch = 34; // Number of balls to launch
+    private int numBallsToLaunch = 44; // Number of balls to launch
     private int ballsLaunched = 0; // Counter for launched balls
     private boolean gameStarted = false;
+    private Line alignment;
+    private int score = 0;
+    @FXML
+    private Text scoreText; // For displaying the score on the screen
+    private int BestScore = 0;
+    private final String SCORE_FILE = "C:\\Users\\alqay\\OneDrive\\Desktop\\github\\javafx_bricks_breacker\\src\\main\\resources\\org\\example\\javafx_project_bricksbreaker\\best_score.txt";
+
+
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
         initializeBrickHealth();
         createBricks();
         createCannon();
+        createAlignment();
+        loadBestScore();
+        bestScore.setText("Best Score: " + BestScore);
 
         gameTimer = new AnimationTimer() {
             @Override
             public void handle(long now) {
                 updateBalls();
+                updateBestScore(score);
+                ballnum.setText("x"+ (numBallsToLaunch-ballsLaunched)+"");
                 for (Rectangle brick : bricks) {
                     if (brick != null && brick.getY() >= 591) {
                         this.stop(); // Stop the game timer
                         Platform.runLater(this::showEndGameDialog); // Show dialog on JavaFX Application Thread
                         break;
+                    } else if (areAllBricksInvisible() && (ballsFallen ==numBallsToLaunch)) {
+                        this.stop(); // Stop the game timer
+                        maxHealth+=20;
+                        Platform.runLater(this::showEndlevelupDialog); // Show dialog on JavaFX Application Thread
+                        break;
+
                     }
                 }
                 if (ballsFallen == numBallsToLaunch && gameStarted) {
-                    resetGame(); // Reset game to start new launch
+                    reloadBalls(); // Reset game to start new launch
                 }
+
             }
 
             private void showEndGameDialog() {
@@ -83,6 +105,34 @@ public class GamePaneController implements Initializable {
                 alert.setContentText("Choose your option:");
 
                 ButtonType buttonTypeRetry = new ButtonType("Retry");
+                ButtonType buttonTypeExit = new ButtonType("Exit");
+                alert.getButtonTypes().setAll(buttonTypeRetry, buttonTypeExit);
+
+                Optional<ButtonType> result = alert.showAndWait();
+                if (result.isPresent()) {
+                    if (result.get() == buttonTypeRetry) {
+                        maxHealth=30;
+                        score = 0;
+                        updateScore(0);
+                        reset();  // Reset game state and start over
+                        gameTimer.start();  // Restart the game timer
+                    } else if (result.get() == buttonTypeExit) {
+                        System.exit(0);  // Exit the game
+                    }
+                } else {
+                    // Log when no selection is made and the dialog is closed
+                    System.out.println("No selection made, dialog closed.");
+                }
+            }
+
+
+            private void showEndlevelupDialog() {
+                Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
+                alert.setTitle("congratulations");
+                alert.setHeaderText("you win this level!");
+                alert.setContentText("Choose your option:");
+
+                ButtonType buttonTypeRetry = new ButtonType("next level");
                 ButtonType buttonTypeExit = new ButtonType("Exit");
                 alert.getButtonTypes().setAll(buttonTypeRetry, buttonTypeExit);
 
@@ -112,24 +162,82 @@ public class GamePaneController implements Initializable {
         });
     }
 
+    private boolean areAllBricksInvisible() {
+        for (Rectangle brick : bricks) {
+            if (brick != null && brick.isVisible()) {
+                return false;  // Return false immediately if any brick is visible
+            }
+        }
+        return true;  // All bricks are invisible
+    }
+
     private void reset() {
         // Reset all game variables and states to their initial values
         ballsFallen = 0;
         balls.clear();
         gameStarted = false;
         healthTexts.clear();
-        // Reset any other variables and states as needed
-        // Delete all previous game bricks
-        root.getChildren().removeIf(node -> node instanceof Rectangle);
-        root.getChildren().removeIf(node -> node instanceof Text);
+        alignment.setVisible(false);
+
+
+
+
+        root.getChildren().removeIf(node ->
+                (node instanceof Rectangle ||
+                        (node instanceof Text && node != scoreText && node != ballnum && node != bestScore)));
+
+
 
         // Reset bricks and cannon positions
         initializeBrickHealth();
         createBricks();
         createCannon();
+        createAlignment();
 
         // Start the game timer again
         gameTimer.start();
+    }
+
+    private void loadBestScore() {
+        File scoreFile = new File(SCORE_FILE);
+
+        if (!scoreFile.exists()) {
+            System.out.println("Score file does not exist. Creating a new file...");
+            return;
+        }
+
+        try (BufferedReader reader = new BufferedReader(new FileReader(scoreFile))) {
+            String line = reader.readLine();
+            if (line != null && !line.isEmpty()) {
+                BestScore = Integer.parseInt(line.trim());
+            }
+        } catch (IOException | NumberFormatException e) {
+            System.err.println("Error reading best score from file: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+
+    private void saveBestScore() {
+        try (BufferedWriter writer = new BufferedWriter(new FileWriter(SCORE_FILE))) {
+            writer.write(Integer.toString(BestScore));
+        } catch (IOException e) {
+            // Handle exceptions
+            e.printStackTrace();
+        }
+    }
+
+    public void updateBestScore(int newScore) {
+        if (score > BestScore) {
+            BestScore = score;
+            saveBestScore();
+        }
+    }
+
+
+
+    private void updateScore(int points) {
+        score += points;
+        scoreText.setText("Score: " + score); // Update the displayed text
     }
 
 
@@ -195,11 +303,11 @@ public class GamePaneController implements Initializable {
 
     private void createBricks() {
         int brickSize = 50; // Size of each brick (width and height)
-        int spacing = 5; // Spacing between bricks
+        int spacing = 4; // Spacing between bricks
         int numRows = 8; // Number of rows
         int numCols = 11; // Number of columns
         int startX = 50; // Starting X position
-        int startY = 50; // Starting Y position
+        int startY = 80; // Starting Y position
 
         bricks = new Rectangle[numBricks];
 
@@ -251,7 +359,7 @@ public class GamePaneController implements Initializable {
                     Text healthText = new Text(Integer.toString(brickHealth[index]));
                     healthText.setId(Integer.toString(index));
                     healthText.setFont(Font.font("Arial", FontWeight.BOLD, 14));
-                    healthText.setFill(Color.WHITE);
+                    healthText.setFill(WHITE);
                     healthText.setX(x + brickSize / 2 -7); // Center text horizontally
                     healthText.setY(y + brickSize / 2 + 5); // Center text vertically
                     root.getChildren().add(healthText); // Add text to AnchorPane
@@ -277,24 +385,31 @@ public class GamePaneController implements Initializable {
     private void createCannon() {
         // Create cannon shape
         cannon = new Rectangle(cannonX - ballRadius / 2, cannonY, ballRadius, ballRadius * 2);
-        cannon.setFill(Color.GRAY);
+        cannon.setFill(DARKORANGE);
+        cannon.setArcHeight(5);
+        cannon.setArcWidth(5);
         root.getChildren().add(cannon);
     }
     private void launchBalls(double angel) {
         AnimationTimer timer = new AnimationTimer() {
             private long lastUpdate = 0; // Track the time of the last ball launch
-            private final long interval = 70000000; // 1 second interval between launches
+            private final long interval = 49500000; // 1 second interval between launches
             private final double fixedAngle = Math.toRadians(-angel+180); // Launch angle
 
             @Override
             public void handle(long now) {
                 if (ballsLaunched < numBallsToLaunch && (lastUpdate == 0 || now - lastUpdate >= interval)) {
-                    double speed = 7.5; // Set a constant speed for each ball
+
+                    double speed = 13; // Set a constant speed for each ball
+
+
                     double vx = Math.cos(fixedAngle) * speed;
                     double vy = -Math.sin(fixedAngle) * speed;
 
                     Circle newBall = new Circle(cannonX, cannonY - ballRadius / 2, ballRadius, Color.LIGHTPINK);
                     newBall.setUserData(new double[]{vx, vy});
+                    newBall.setStroke(RED);
+                    newBall.setStrokeWidth(3);
                     root.getChildren().add(newBall);
                     balls.add(newBall);
 
@@ -310,7 +425,7 @@ public class GamePaneController implements Initializable {
         };
         timer.start();
     }
-    private void resetGame() {
+    private void reloadBalls() {
         // Reset game state here
         balls.clear();        // Clear all balls
         ballsLaunched = 0;    // Reset the number of balls launched
@@ -336,16 +451,23 @@ public class GamePaneController implements Initializable {
     private void updateHealthText(int index) {
         // Find the health text node associated with the given brick index
         for (Node node : root.getChildren()) {
-            if (node instanceof Text healthText) {
-                if (Integer.parseInt(healthText.getId()) == index) {
-                    if (brickHealth[index] == 0) healthText.setVisible(false);
-                    // Update the health text with the new health value
-                    healthText.setText(Integer.toString(brickHealth[index]));
-                    break; // Exit loop once the health text is found and updated
+            if (node instanceof Text) {
+                Text healthText = (Text) node;
+                // Check if the ID is numeric and matches the index before updating
+                try {
+                    int textId = Integer.parseInt(healthText.getId());
+                    if (textId == index) {
+                        if (brickHealth[index] == 0) healthText.setVisible(false);
+                        healthText.setText(Integer.toString(brickHealth[index]));
+                        break; // Exit loop once the health text is found and updated
+                    }
+                } catch (NumberFormatException e) {
+
                 }
             }
         }
     }
+
 
 
     private void checkBrickCollision(Circle ball, double[] velocity) {
@@ -355,9 +477,11 @@ public class GamePaneController implements Initializable {
         for (int i = 0; i < numBricks; i++) {
             if (brickHealth[i] > 0 && bricks[i] != null && ball.getBoundsInParent().intersects(bricks[i].getBoundsInParent())) {
                 brickHealth[i]--;
+                updateScore(1);
                 updateHealthText(i);
                 if (brickHealth[i] == 0) {
                     bricks[i].setVisible(false);     // Hide the brick if its health is depleted
+                    updateScore(20);
 
                 }
 
@@ -382,6 +506,99 @@ public class GamePaneController implements Initializable {
             }
         }
     }
+    public void createAlignment() {
+        alignment = new Line();
+        alignment.setStartX(cannonX);
+        alignment.setStartY(cannonY);
+        alignment.setStroke(VIOLET);
+        alignment.setStrokeWidth(9);
+        alignment.getStrokeDashArray().addAll(30d, 20d);
+        root.getChildren().add(alignment);
+        alignment.setVisible(false);
+
+        // Attach a listener to update the alignment line as the slider value changes
+        sliderangel.setOnMouseDragged(e-> {
+            alignment.setVisible(true);
+            updateAlignmentLine(sliderangel.getValue());
+        });
+
+        // Listen for when the user stops dragging the slider
+        sliderangel.setOnMouseReleased(e->{
+            alignment.setVisible(false);
+
+        });
+
+    }
+
+
+
+    private void updateAlignmentLine(double angleDegrees) {
+        double angleRadians = Math.toRadians(-angleDegrees+180);
+        double lineLength = 1000; // Large enough to ensure it reaches out of the game area
+        double endX = cannonX + lineLength * Math.cos(angleRadians);
+        double endY = cannonY - lineLength * Math.sin(angleRadians);
+        alignment.setEndX(endX);
+        alignment.setEndY(endY);
+        adjustLineEndToBrickCollision();
+    }
+
+
+    private void adjustLineEndToBrickCollision() {
+        double closestIntersectionDistance = Double.MAX_VALUE;
+        Point2D closestIntersection = null;
+        Point2D cannonPoint = new Point2D(cannonX, cannonY);
+
+        for (Rectangle brick : bricks) {
+            if (brick != null && brick.isVisible()) {
+                List<Point2D> intersections = findLineRectIntersections(cannonX, cannonY, alignment.getEndX(), alignment.getEndY(), brick);
+                for (Point2D intersection : intersections) {
+                    if (intersection != null) {
+                        double distance = cannonPoint.distance(intersection);
+                        if (distance < closestIntersectionDistance) {
+                            closestIntersectionDistance = distance;
+                            closestIntersection = intersection;
+                        }
+                    }
+                }
+            }
+        }
+
+        if (closestIntersection != null) {
+            alignment.setEndX(closestIntersection.getX());
+            alignment.setEndY(closestIntersection.getY());
+        }
+
+    }
+
+
+    private List<Point2D> findLineRectIntersections(double x1, double y1, double x2, double y2, Rectangle rect) {
+        List<Point2D> intersections = new ArrayList<>();
+        // Check each side of the rectangle
+        intersections.add(intersectLines(x1, y1, x2, y2, rect.getX(), rect.getY(), rect.getX() + rect.getWidth(), rect.getY())); // Top
+        intersections.add(intersectLines(x1, y1, x2, y2, rect.getX(), rect.getY() + rect.getHeight(), rect.getX() + rect.getWidth(), rect.getY() + rect.getHeight())); // Bottom
+        intersections.add(intersectLines(x1, y1, x2, y2, rect.getX(), rect.getY(), rect.getX(), rect.getY() + rect.getHeight())); // Left
+        intersections.add(intersectLines(x1, y1, x2, y2, rect.getX() + rect.getWidth(), rect.getY(), rect.getX() + rect.getWidth(), rect.getY() + rect.getHeight())); // Right
+        return intersections.stream().filter(Objects::nonNull).collect(Collectors.toList());
+    }
+
+
+    private Point2D intersectLines(double x1, double y1, double x2, double y2, double x3, double y3, double x4, double y4) {
+        double denom = (x1 - x2) * (y3 - y4) - (y1 - y2) * (x3 - x4);
+        if (denom == 0) return null; // Lines are parallel, no intersection
+
+        double intersectX = ((x1 * y2 - y1 * x2) * (x3 - x4) - (x1 - x2) * (x3 * y4 - y3 * x4)) / denom;
+        double intersectY = ((x1 * y2 - y1 * x2) * (y3 - y4) - (y1 - y2) * (x3 * y4 - y3 * x4)) / denom;
+
+        // Ensure the intersection point is within the line segment bounds
+        if (intersectX < Math.min(x3, x4) || intersectX > Math.max(x3, x4) ||
+                intersectY < Math.min(y3, y4) || intersectY > Math.max(y3, y4)) {
+            return null;
+        }
+        return new Point2D(intersectX, intersectY);
+    }
+
+
 
 
 }
+
