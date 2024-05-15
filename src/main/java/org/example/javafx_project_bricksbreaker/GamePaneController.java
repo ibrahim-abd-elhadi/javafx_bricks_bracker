@@ -13,6 +13,8 @@ import javafx.scene.control.Slider;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.AnchorPane;
+import javafx.scene.media.Media;
+import javafx.scene.media.MediaPlayer;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Circle;
 import javafx.scene.shape.Line;
@@ -60,7 +62,9 @@ public class GamePaneController implements Initializable {
     @FXML
     private Text scoreText; // For displaying the score on the screen
     private int BestScore = 0;
-    private final String SCORE_FILE = "C:\\Users\\alqay\\OneDrive\\Desktop\\github\\javafx_bricks_breacker\\src\\main\\resources\\org\\example\\javafx_project_bricksbreaker\\best_score.txt";
+    private final String SCORE_FILE = "E:\\College\\CSE 1st year\\2nd semester\\Programming\\javafx_bricks_breacker\\src\\main\\resources\\org\\example\\javafx_project_bricksbreaker\\best_score.txt";
+    private Media brickHitSound;
+    private MediaPlayer brickHitMediaPlayer;
 
 
 
@@ -160,6 +164,8 @@ public class GamePaneController implements Initializable {
                 sliderangel.setValue(90);
             }
         });
+        brickHitSound  = new Media("file:///D:/Hit.mp3");
+        brickHitMediaPlayer = new MediaPlayer(brickHitSound);
     }
 
     private boolean areAllBricksInvisible() {
@@ -400,7 +406,7 @@ public class GamePaneController implements Initializable {
             public void handle(long now) {
                 if (ballsLaunched < numBallsToLaunch && (lastUpdate == 0 || now - lastUpdate >= interval)) {
 
-                    double speed = 13; // Set a constant speed for each ball
+                    double speed = 7.5; // Set a constant speed for each ball
 
 
                     double vx = Math.cos(fixedAngle) * speed;
@@ -477,12 +483,12 @@ public class GamePaneController implements Initializable {
         for (int i = 0; i < numBricks; i++) {
             if (brickHealth[i] > 0 && bricks[i] != null && ball.getBoundsInParent().intersects(bricks[i].getBoundsInParent())) {
                 brickHealth[i]--;
+                playBrickHitSound();  // Play the sound effect
                 updateScore(1);
                 updateHealthText(i);
                 if (brickHealth[i] == 0) {
                     bricks[i].setVisible(false);     // Hide the brick if its health is depleted
                     updateScore(20);
-
                 }
 
                 double ballCenterX = ball.getCenterX();
@@ -597,7 +603,12 @@ public class GamePaneController implements Initializable {
         return new Point2D(intersectX, intersectY);
     }
 
-
+    private void playBrickHitSound() {
+        // Create a new MediaPlayer instance for each hit sound
+        MediaPlayer mediaPlayer = new MediaPlayer(brickHitSound);
+        mediaPlayer.play();  // Play the sound effect
+        mediaPlayer.setOnEndOfMedia(() -> mediaPlayer.dispose()); // Dispose the MediaPlayer after the sound finishes playing
+    }
 
 
 }
