@@ -164,7 +164,7 @@ public class GamePaneController implements Initializable {
                 sliderangel.setValue(90);
             }
         });
-        brickHitSound = new Media(new File("src/main/resources/org/example/javafx_project_bricksbreaker/Sound_Effects/Hit(2).mp3").toURI().toString());
+        brickHitSound = new Media(new File("src/main/resources/org/example/javafx_project_bricksbreaker/Sound_Effects/Hit.mp3").toURI().toString());
         brickHitMediaPlayer = new MediaPlayer(brickHitSound);
     }
 
