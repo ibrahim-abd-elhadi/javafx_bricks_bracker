@@ -164,7 +164,7 @@ public class GamePaneController implements Initializable {
                 sliderangel.setValue(90);
             }
         });
-        brickHitSound  = new Media("file:///D:/Hit.mp3");
+        brickHitSound = new Media(new File("src/main/resources/org/example/javafx_project_bricksbreaker/Sound_Effects/Hit(2).mp3").toURI().toString());
         brickHitMediaPlayer = new MediaPlayer(brickHitSound);
     }
 
@@ -406,7 +406,7 @@ public class GamePaneController implements Initializable {
             public void handle(long now) {
                 if (ballsLaunched < numBallsToLaunch && (lastUpdate == 0 || now - lastUpdate >= interval)) {
 
-                    double speed = 7.5; // Set a constant speed for each ball
+                    double speed = 13; // Set a constant speed for each ball
 
 
                     double vx = Math.cos(fixedAngle) * speed;
